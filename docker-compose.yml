@@ -1,0 +1,25 @@
+services:
+  automation-api:
+    build: .
+    container_name: visions-15-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+      - ./files:/label-studio/files
+    depends_on:
+      - label-studio
+
+  label-studio:
+    image: heartexlabs/label-studio:20260610.031457-fb-fit-1840-learning-navi-3e0dd23
+    container_name: label-studio
+    ports:
+      - "8080:8080"
+    environment:
+      LABEL_STUDIO_HOST: "http://localhost:8080"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:8080"
+    volumes:
+      - ./label-studio-data:/label-studio/data
+      - ./files:/label-studio/files

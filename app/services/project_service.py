@@ -1,0 +1,45 @@
+from app.clients.label_studio_client import LabelStudioClient
+from app.services.label_config_service import LabelConfigService
+
+
+class ProjectService:
+    def __init__(
+        self,
+        label_studio_client: LabelStudioClient,
+        label_config_service: LabelConfigService,
+    ):
+        self.label_studio_client = label_studio_client
+        self.label_config_service = label_config_service
+
+    async def create_project(
+        self,
+        project_name: str,
+        classes: list[str],
+    ):
+        label_config = self.label_config_service.build_object_detection_config(
+            classes=classes
+        )
+
+        project = await self.label_studio_client.create_project(
+            title=project_name,
+            label_config=label_config,
+        )
+
+        return {
+            "status": "success",
+            "project_id": project["id"],
+            "project_name": project["title"],
+            "classes": classes,
+        }
+
+    async def create_project_from_metadata(
+        self,
+        metadata: dict,
+    ):
+        project_name = metadata["dataset_update"]["name"]
+        classes = list(metadata["classes"].keys())
+
+        return await self.create_project(
+            project_name=project_name,
+            classes=classes,
+        )
