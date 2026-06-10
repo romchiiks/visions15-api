@@ -11,10 +11,20 @@ class MetadataService:
         try:
             with metadata_path.open("r", encoding="utf-8") as file:
                 return json.load(file)
+        except UnicodeDecodeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid metadata.json: file must be UTF-8 encoded",
+            ) from exc
         except json.JSONDecodeError as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid metadata.json: malformed JSON",
+            ) from exc
+        except OSError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid metadata.json: file could not be read",
             ) from exc
 
     def validate_metadata(self, metadata: dict) -> None:
@@ -80,6 +90,13 @@ class MetadataService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Missing article for class {class_name}",
+                )
+
+            article = class_info["article"]
+            if not isinstance(article, str) or not article.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"article for class {class_name} must be a non-empty string",
                 )
 
             if "directory" not in class_info:
