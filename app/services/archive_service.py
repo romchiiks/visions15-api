@@ -18,10 +18,10 @@ class ArchiveService:
         upload_dir = Path(settings.UPLOAD_DIR)
         upload_dir.mkdir(parents=True, exist_ok=True)
 
-        max_archive_size_bytes = settings.MAX_ARCHIVE_SIZE_MB * 1024 * 1024
-        upload_size = getattr(archive, "size", None)
-        if upload_size is not None and upload_size > max_archive_size_bytes:
-            self._raise_archive_too_large()
+        # max_archive_size_bytes = settings.MAX_ARCHIVE_SIZE_MB * 1024 * 1024
+        # upload_size = getattr(archive, "size", None)
+        # if upload_size is not None and upload_size > max_archive_size_bytes:
+        #     self._raise_archive_too_large()
 
         archive_id = uuid4().hex
         archive_name = sanitize_filename(archive.filename or "dataset.zip") or "dataset.zip"
@@ -32,8 +32,8 @@ class ArchiveService:
             with archive_path.open("wb") as buffer:
                 while chunk := await archive.read(self._COPY_CHUNK_SIZE):
                     written_bytes += len(chunk)
-                    if written_bytes > max_archive_size_bytes:
-                        self._raise_archive_too_large()
+                    # if written_bytes > max_archive_size_bytes:
+                        # self._raise_archive_too_large()
                     buffer.write(chunk)
         except HTTPException:
             archive_path.unlink(missing_ok=True)
@@ -41,11 +41,11 @@ class ArchiveService:
 
         return archive_path
 
-    def _raise_archive_too_large(self) -> None:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Archive size exceeds {settings.MAX_ARCHIVE_SIZE_MB} MB limit.",
-        )
+    # def _raise_archive_too_large(self) -> None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+    #         detail=f"Archive size exceeds {settings.MAX_ARCHIVE_SIZE_MB} MB limit.",
+    #     )
 
     def _raise_unsafe_archive_entry(self, entry_name: str) -> None:
         raise HTTPException(

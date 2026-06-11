@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     API_KEYS_FILE: str = "storage/secrets/api_keys.json"
 
-    MAX_ARCHIVE_SIZE_MB: int = 500
+    # MAX_ARCHIVE_SIZE_MB: int = 500
 
     model_config = SettingsConfigDict(
         env_file=".env",
