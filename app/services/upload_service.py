@@ -1,3 +1,7 @@
+import shutil
+from contextlib import suppress
+from pathlib import Path
+
 from fastapi import UploadFile
 
 from app.services.archive_service import ArchiveService
@@ -24,19 +28,25 @@ class UploadService:
         archive: UploadFile,
     ):
         archive_path = await self.archive_service.save_archive(archive)
-        extracted_dir = self.archive_service.extract_archive(archive_path)
+        extracted_dir: Path | None = None
 
-        metadata = self.metadata_service.read_metadata(extracted_dir)
-        self.metadata_service.validate_metadata(metadata)
+        try:
+            extracted_dir = self.archive_service.extract_archive(archive_path)
 
-        self.archive_validation_service.validate_dataset_structure(
-            extracted_dir=extracted_dir,
-            metadata=metadata,
-        )
+            metadata = self.metadata_service.read_metadata(extracted_dir)
+            self.metadata_service.validate_metadata(metadata)
 
-        project = await self.project_service.create_project_from_metadata(
-            metadata=metadata,
-        )
+            self.archive_validation_service.validate_dataset_structure(
+                extracted_dir=extracted_dir,
+                metadata=metadata,
+            )
+
+            project = await self.project_service.create_project_from_metadata(
+                metadata=metadata,
+            )
+        except Exception:
+            self._cleanup_failed_upload(archive_path, extracted_dir)
+            raise
 
         return {
             "status": "success",
@@ -46,3 +56,15 @@ class UploadService:
             "extracted_dir": str(extracted_dir),
             "classes": list(metadata["classes"].keys()),
         }
+
+    def _cleanup_failed_upload(
+        self,
+        archive_path: Path,
+        extracted_dir: Path | None,
+    ) -> None:
+        with suppress(OSError):
+            archive_path.unlink(missing_ok=True)
+
+        if extracted_dir is not None:
+            with suppress(OSError):
+                shutil.rmtree(extracted_dir)

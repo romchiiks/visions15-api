@@ -60,6 +60,7 @@ class MetadataService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="metadata.dataset_update.name must be a non-empty string",
             )
+        dataset_update["name"] = project_name.strip()
 
         if "classes" not in metadata:
             raise HTTPException(
@@ -67,17 +68,27 @@ class MetadataService:
                 detail="Missing classes block in metadata.json",
             )
 
-        if not isinstance(metadata["classes"], dict) or not metadata["classes"]:
+        classes = metadata["classes"]
+        if not isinstance(classes, dict) or not classes:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="metadata.classes must be a non-empty object",
             )
 
-        for class_name, class_info in metadata["classes"].items():
-            if not class_name:
+        normalized_classes = {}
+
+        for class_name, class_info in classes.items():
+            if not isinstance(class_name, str) or not class_name.strip():
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Class name cannot be empty",
+                )
+
+            class_name = class_name.strip()
+            if class_name in normalized_classes:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Duplicate class name after trimming whitespace: {class_name}",
                 )
 
             if not isinstance(class_info, dict):
@@ -121,6 +132,10 @@ class MetadataService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"images_count for class {class_name} must be an integer >= 0",
                 )
+
+            normalized_classes[class_name] = class_info
+
+        metadata["classes"] = normalized_classes
 
     def _find_metadata_file(self, extracted_dir: Path) -> Path:
         direct_metadata = extracted_dir / "metadata.json"

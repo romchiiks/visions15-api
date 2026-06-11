@@ -1,5 +1,7 @@
+import shutil
 import tarfile
 import zipfile
+from contextlib import suppress
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from uuid import uuid4
 
@@ -56,20 +58,27 @@ class ArchiveService:
         extracted_root.mkdir(parents=True, exist_ok=True)
 
         target_dir = extracted_root / archive_path.stem
+        target_dir_existed = target_dir.exists()
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        if zipfile.is_zipfile(archive_path):
-            self._extract_zip_safely(archive_path, target_dir)
-            return target_dir
+        try:
+            if zipfile.is_zipfile(archive_path):
+                self._extract_zip_safely(archive_path, target_dir)
+                return target_dir
 
-        if tarfile.is_tarfile(archive_path):
-            self._extract_tar_safely(archive_path, target_dir)
-            return target_dir
+            if tarfile.is_tarfile(archive_path):
+                self._extract_tar_safely(archive_path, target_dir)
+                return target_dir
 
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unsupported archive format. Use .zip, .tar, .tar.gz",
-        )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported archive format. Use .zip, .tar, .tar.gz",
+            )
+        except Exception:
+            if not target_dir_existed:
+                with suppress(OSError):
+                    shutil.rmtree(target_dir)
+            raise
 
     def _extract_zip_safely(self, archive_path: Path, target_dir: Path) -> None:
         with zipfile.ZipFile(archive_path, "r") as archive:
