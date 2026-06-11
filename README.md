@@ -49,7 +49,7 @@ APP_VERSION=0.1.0
 API_KEYS_FILE=/app/storage/secrets/api_keys.json
 
 LABEL_STUDIO_URL=http://label-studio:8080
-LABEL_STUDIO_API_KEY=<label-studio-legacy-token>
+LABEL_STUDIO_API_KEY=<label-studio-api-key>
 
 UPLOAD_DIR=/label-studio/files/uploads
 EXTRACTED_DIR=/label-studio/files/extracted
@@ -57,13 +57,13 @@ EXTRACTED_DIR=/label-studio/files/extracted
 
 ### `LABEL_STUDIO_API_KEY`
 
-Нужен Legacy Token пользователя Label Studio. Его можно получить в UI Label Studio:
+Нужен API token пользователя Label Studio. Его можно получить в UI Label Studio:
 
 1. Откройте `http://localhost:8080`.
 2. Войдите или создайте первого пользователя.
 3. Откройте меню пользователя.
 4. Перейдите в `Account & Settings`.
-5. Откройте `Legacy Token`.
+5. Откройте `Personal Access Token`.
 6. Скопируйте токен в `LABEL_STUDIO_API_KEY`.
 
 Код отправляет токен как:
@@ -351,7 +351,7 @@ dataset/
 docker compose up --build
 ```
 
-2. Открыть Label Studio и получить Legacy Token.
+2. Открыть Label Studio и получить Personal Access Token.
 
 3. Записать токен в `.env`:
 
