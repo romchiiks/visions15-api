@@ -50,6 +50,7 @@ API_KEYS_FILE=/app/storage/secrets/api_keys.json
 
 LABEL_STUDIO_URL=http://label-studio:8080
 LABEL_STUDIO_API_KEY=<label-studio-api-key>
+LABEL_STUDIO_AUTH_SCHEME=Bearer
 
 UPLOAD_DIR=/label-studio/files/uploads
 EXTRACTED_DIR=/label-studio/files/extracted
@@ -64,9 +65,27 @@ EXTRACTED_DIR=/label-studio/files/extracted
 3. Откройте меню пользователя.
 4. Перейдите в `Account & Settings`.
 5. Откройте `Personal Access Token`.
-6. Скопируйте токен в `LABEL_STUDIO_API_KEY`.
+6. Создайте и скопируйте токен в `LABEL_STUDIO_API_KEY`.
 
-Код отправляет токен как:
+Для Personal Access Token оставьте:
+
+```env
+LABEL_STUDIO_AUTH_SCHEME=Bearer
+```
+
+Код отправит токен как:
+
+```http
+Authorization: Bearer <LABEL_STUDIO_API_KEY>
+```
+
+Если используете старый Legacy Token, задайте:
+
+```env
+LABEL_STUDIO_AUTH_SCHEME=Token
+```
+
+Тогда код отправит токен как:
 
 ```http
 Authorization: Token <LABEL_STUDIO_API_KEY>
@@ -356,7 +375,8 @@ docker compose up --build
 3. Записать токен в `.env`:
 
 ```env
-LABEL_STUDIO_API_KEY=<label-studio-legacy-token>
+LABEL_STUDIO_API_KEY=<label-studio-personal-access-token>
+LABEL_STUDIO_AUTH_SCHEME=Bearer
 ```
 
 4. Перезапустить API-контейнер:

@@ -1,3 +1,6 @@
+from typing import Literal
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -7,6 +10,7 @@ class Settings(BaseSettings):
 
     LABEL_STUDIO_URL: str
     LABEL_STUDIO_API_KEY: str
+    LABEL_STUDIO_AUTH_SCHEME: Literal["Bearer", "Token"] = "Bearer"
 
     UPLOAD_DIR: str = "/label-studio/files/uploads"
     EXTRACTED_DIR: str = "/label-studio/files/extracted"
@@ -19,6 +23,20 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
     )
+
+    @field_validator("LABEL_STUDIO_AUTH_SCHEME", mode="before")
+    @classmethod
+    def normalize_label_studio_auth_scheme(cls, value: object) -> str:
+        if value is None or str(value).strip() == "":
+            return "Bearer"
+
+        scheme = str(value).strip().lower()
+        if scheme == "bearer":
+            return "Bearer"
+        if scheme == "token":
+            return "Token"
+
+        return str(value)
 
 
 settings = Settings()

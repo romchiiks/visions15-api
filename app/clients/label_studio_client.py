@@ -3,14 +3,15 @@ from fastapi import HTTPException, status
 
 
 class LabelStudioClient:
-    def __init__(self, base_url: str, api_key: str):
+    def __init__(self, base_url: str, api_key: str, auth_scheme: str = "Bearer"):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
+        self.auth_scheme = auth_scheme.strip()
 
     @property
     def headers(self) -> dict[str, str]:
         return {
-            "Authorization": f"Token {self.api_key}",
+            "Authorization": f"{self.auth_scheme} {self.api_key}",
         }
 
     async def create_project(

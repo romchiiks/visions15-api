@@ -12,6 +12,7 @@ def get_label_studio_client() -> LabelStudioClient:
     return LabelStudioClient(
         base_url=settings.LABEL_STUDIO_URL,
         api_key=settings.LABEL_STUDIO_API_KEY,
+        auth_scheme=settings.LABEL_STUDIO_AUTH_SCHEME,
     )
 
 
