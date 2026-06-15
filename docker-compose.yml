@@ -13,7 +13,7 @@ services:
       - label-studio
 
   label-studio:
-    image: heartexlabs/label-studio:20260610.031457-fb-fit-1840-learning-navi-3e0dd23
+    image: heartexlabs/label-studio:1.23.0
     container_name: label-studio
     ports:
       - "8080:8080"

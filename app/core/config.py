@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     LABEL_STUDIO_URL: str
     LABEL_STUDIO_API_KEY: str
-    LABEL_STUDIO_AUTH_SCHEME: Literal["Bearer", "Token"] = "Bearer"
+    LABEL_STUDIO_AUTH_SCHEME: Literal["Bearer", "Token"] = "Token"
 
     UPLOAD_DIR: str = "/label-studio/files/uploads"
     EXTRACTED_DIR: str = "/label-studio/files/extracted"
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_label_studio_auth_scheme(cls, value: object) -> str:
         if value is None or str(value).strip() == "":
-            return "Bearer"
+            return "Token"
 
         scheme = str(value).strip().lower()
         if scheme == "bearer":

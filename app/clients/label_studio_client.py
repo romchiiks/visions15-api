@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 
 
 class LabelStudioClient:
-    def __init__(self, base_url: str, api_key: str, auth_scheme: str = "Bearer"):
+    def __init__(self, base_url: str, api_key: str, auth_scheme: str = "Token"):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.auth_scheme = auth_scheme.strip()
