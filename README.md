@@ -77,7 +77,7 @@ Authorization: Token <LABEL_STUDIO_API_KEY>
 ## Запуск
 
 ```bash
-docker compose up --build
+docker-compose up --build
 ```
 
 После запуска:
