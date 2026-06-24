@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     EXTRACTED_DIR: str = "/label-studio/files/extracted"
     LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: str = "/label-studio/files"
 
+    S3_ENDPOINT_URL: str = "minio:9000"
+    S3_ACCESS_KEY: str = "minioadmin"
+    S3_SECRET_KEY: str = "minioadmin"
+    S3_BUCKET: str = "visions15-datasets"
+    S3_SECURE: bool = False
+    S3_PUBLIC_BASE_URL: str = "http://localhost:9000/visions15-datasets"
+    S3_BUCKET_PUBLIC_READ: bool = True
+
     API_KEYS_FILE: str = "storage/secrets/api_keys.json"
 
     # MAX_ARCHIVE_SIZE_MB: int = 500

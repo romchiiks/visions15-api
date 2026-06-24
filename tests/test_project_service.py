@@ -49,8 +49,8 @@ def test_create_project_from_metadata_with_tasks_imports_tasks():
         "classes": {"cat": {}, "dog": {}},
     }
     tasks = [
-        {"data": {"image": "/data/local-files/?d=extracted/cat.jpg"}},
-        {"data": {"image": "/data/local-files/?d=extracted/dog.jpg"}},
+        {"data": {"image": "https://storage.test/datasets/cat.jpg"}},
+        {"data": {"image": "https://storage.test/datasets/dog.jpg"}},
     ]
 
     result = asyncio.run(

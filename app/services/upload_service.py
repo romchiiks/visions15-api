@@ -1,14 +1,13 @@
 import shutil
 from contextlib import suppress
 from pathlib import Path
-from urllib.parse import quote
 
 from fastapi import HTTPException, UploadFile, status
 
-from app.core.config import settings
 from app.services.archive_service import ArchiveService
 from app.services.archive_validation_service import ArchiveValidationService
 from app.services.metadata_service import MetadataService
+from app.services.object_storage_service import ObjectStorageService
 from app.services.project_service import ProjectService
 
 
@@ -18,11 +17,13 @@ class UploadService:
         archive_service: ArchiveService,
         metadata_service: MetadataService,
         archive_validation_service: ArchiveValidationService,
+        object_storage_service: ObjectStorageService,
         project_service: ProjectService,
     ):
         self.archive_service = archive_service
         self.metadata_service = metadata_service
         self.archive_validation_service = archive_validation_service
+        self.object_storage_service = object_storage_service
         self.project_service = project_service
 
     async def process_archive_upload(
@@ -72,8 +73,6 @@ class UploadService:
         metadata: dict,
     ) -> list[dict]:
         dataset_root = self._find_dataset_root(extracted_dir)
-        document_root = Path(settings.LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT)
-        resolved_document_root = document_root.resolve(strict=False)
 
         tasks = []
         for class_name, class_info in metadata["classes"].items():
@@ -87,19 +86,24 @@ class UploadService:
             )
 
             for image_path in images:
-                relative_image_path = self._relative_to_document_root(
-                    path=image_path,
-                    document_root=resolved_document_root,
+                object_name = self._storage_object_name(
+                    extracted_dir=extracted_dir,
+                    dataset_root=dataset_root,
+                    image_path=image_path,
+                )
+                image_url = self.object_storage_service.upload_file(
+                    source_path=image_path,
+                    object_name=object_name,
                 )
                 tasks.append(
                     {
                         "data": {
-                            "image": self._local_file_url(relative_image_path),
+                            "image": image_url,
                         },
                         "meta": {
                             "class": class_name,
                             "article": class_info["article"],
-                            "source_path": relative_image_path.as_posix(),
+                            "source_path": object_name,
                         },
                     }
                 )
@@ -122,26 +126,20 @@ class UploadService:
             detail="Cannot determine dataset root directory",
         )
 
-    def _relative_to_document_root(
+    def _storage_object_name(
         self,
-        path: Path,
-        document_root: Path,
-    ) -> Path:
-        resolved_path = path.resolve(strict=False)
+        extracted_dir: Path,
+        dataset_root: Path,
+        image_path: Path,
+    ) -> str:
+        relative_image_path = image_path.relative_to(dataset_root)
 
-        try:
-            return resolved_path.relative_to(document_root)
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    "Extracted image is outside "
-                    "LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT"
-                ),
-            ) from exc
+        if dataset_root == extracted_dir:
+            dataset_relative_path = relative_image_path
+        else:
+            dataset_relative_path = Path(dataset_root.name) / relative_image_path
 
-    def _local_file_url(self, relative_path: Path) -> str:
-        return f"/data/local-files/?d={quote(relative_path.as_posix(), safe='/')}"
+        return f"datasets/{extracted_dir.name}/{dataset_relative_path.as_posix()}"
 
     def _cleanup_failed_upload(
         self,

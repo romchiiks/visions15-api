@@ -2,7 +2,7 @@
 
 FastAPI-сервис для создания проектов в Label Studio и загрузки датасетов из архивов.
 
-Сервис работает рядом с Label Studio через `docker-compose`: API принимает запросы, проверяет внутренний `X-API-Key`, валидирует структуру архива и создает проект в Label Studio через ее API.
+Сервис работает рядом с Label Studio и MinIO через `docker-compose`: API принимает запросы, проверяет внутренний `X-API-Key`, валидирует структуру архива, загружает изображения в S3-compatible storage и создает проект в Label Studio через ее API.
 
 ## Возможности
 
@@ -11,6 +11,7 @@ FastAPI-сервис для создания проектов в Label Studio и
 - Загрузка архива датасета.
 - Поиск и проверка `metadata.json` внутри архива.
 - Проверка структуры директорий классов и количества изображений.
+- Загрузка изображений в S3/MinIO и импорт задач в Label Studio.
 - Безопасная распаковка ZIP/TAR с защитой от path traversal и ссылок в TAR.
 
 ## Стек
@@ -22,6 +23,7 @@ FastAPI-сервис для создания проектов в Label Studio и
 - Pydantic Settings
 - Docker Compose
 - Label Studio
+- MinIO
 
 ## Структура проекта
 
@@ -55,6 +57,14 @@ LABEL_STUDIO_AUTH_SCHEME=Token
 UPLOAD_DIR=/label-studio/files/uploads
 EXTRACTED_DIR=/label-studio/files/extracted
 LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files
+
+S3_ENDPOINT_URL=minio:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET=visions15-datasets
+S3_SECURE=false
+S3_PUBLIC_BASE_URL=http://localhost:9000/visions15-datasets
+S3_BUCKET_PUBLIC_READ=true
 ```
 
 ### `LABEL_STUDIO_API_KEY`
@@ -84,6 +94,16 @@ Authorization: Token <LABEL_STUDIO_API_KEY>
 
 Не коммитьте реальный `.env` и токены.
 
+### `S3_PUBLIC_BASE_URL`
+
+`S3_PUBLIC_BASE_URL` должен быть доступен из браузера пользователя Label Studio. Для HTTPS-инсталляции нельзя оставлять `http://...`, иначе браузер заблокирует загрузку изображений как mixed content.
+
+Например, если nginx проксирует `/datasets/` в MinIO bucket, задайте:
+
+```env
+S3_PUBLIC_BASE_URL=https://mv.digi-tek.ru/datasets
+```
+
 ## Запуск
 
 ```bash
@@ -95,6 +115,8 @@ docker compose up --build
 - API: `http://localhost:8000`
 - Swagger UI: `http://localhost:8000/docs`
 - Label Studio: `http://localhost:8080`
+- MinIO S3 API: `http://localhost:9000`
+- MinIO Console: `http://localhost:9001`
 
 Проверка health endpoint:
 
@@ -274,7 +296,7 @@ curl -X POST "$API_URL/uploads/archive" \
 - `saved_archive_path` - путь сохраненного архива внутри контейнера.
 - `extracted_dir` - путь распакованного датасета внутри контейнера.
 - `classes` - список классов из `metadata.json`.
-- `imported_tasks_count` - количество задач с изображениями, импортированных в Label Studio.
+- `imported_tasks_count` - количество задач с S3/MinIO URL изображений, импортированных в Label Studio.
 
 ### Возможные ошибки
 
@@ -432,6 +454,11 @@ uvicorn app.main:app --reload
 - `UPLOAD_DIR`
 - `EXTRACTED_DIR`
 - `LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT`
+- `S3_ENDPOINT_URL`
+- `S3_ACCESS_KEY`
+- `S3_SECRET_KEY`
+- `S3_BUCKET`
+- `S3_PUBLIC_BASE_URL`
 
 ## Проверки разработки
 
