@@ -62,3 +62,35 @@ class ProjectService:
         project["task_import"] = import_result
 
         return project
+
+    async def create_projects_from_metadata_with_tasks_by_class(
+        self,
+        metadata: dict,
+        tasks_by_class: dict[str, list[dict]],
+    ):
+        dataset_name = metadata["dataset_update"]["name"]
+        projects = []
+
+        for class_name in metadata["classes"].keys():
+            project = await self.create_project(
+                project_name=f"{class_name}-{dataset_name}",
+                classes=[class_name],
+            )
+            tasks = tasks_by_class.get(class_name, [])
+            import_result = {}
+
+            if tasks:
+                import_result = await self.label_studio_client.import_tasks(
+                    project_id=project["project_id"],
+                    tasks=tasks,
+                )
+
+            project["class_name"] = class_name
+            project["imported_tasks_count"] = import_result.get(
+                "task_count",
+                len(tasks),
+            )
+            project["task_import"] = import_result
+            projects.append(project)
+
+        return projects

@@ -255,7 +255,7 @@ curl -X POST "$API_URL/projects" \
 
 ## `POST /uploads/archive`
 
-Загружает архив датасета, распаковывает его, читает `metadata.json`, проверяет структуру классов и создает проект в Label Studio.
+Загружает архив датасета, распаковывает его, читает `metadata.json`, проверяет структуру классов и создает отдельный проект в Label Studio для каждого класса.
 
 ### Request
 
@@ -280,8 +280,20 @@ curl -X POST "$API_URL/uploads/archive" \
 ```json
 {
   "status": "success",
-  "project_id": 12,
-  "project_name": "Demo dataset",
+  "projects": [
+    {
+      "project_id": 12,
+      "project_name": "cat-dataset-20260624-120000",
+      "class_name": "cat",
+      "imported_tasks_count": 2
+    },
+    {
+      "project_id": 13,
+      "project_name": "dog-dataset-20260624-120000",
+      "class_name": "dog",
+      "imported_tasks_count": 1
+    }
+  ],
   "saved_archive_path": "/label-studio/files/uploads/...",
   "extracted_dir": "/label-studio/files/extracted/...",
   "classes": ["cat", "dog"],
@@ -291,12 +303,15 @@ curl -X POST "$API_URL/uploads/archive" \
 
 Поля:
 
-- `project_id` - ID созданного проекта в Label Studio.
-- `project_name` - имя созданного проекта.
+- `projects` - список созданных проектов Label Studio, по одному проекту на класс.
+- `projects[].project_id` - ID созданного проекта в Label Studio.
+- `projects[].project_name` - имя созданного проекта в формате `<classname>-dataset-<datetime>`.
+- `projects[].class_name` - класс, для которого создан проект.
+- `projects[].imported_tasks_count` - количество задач, импортированных в проект.
 - `saved_archive_path` - путь сохраненного архива внутри контейнера.
 - `extracted_dir` - путь распакованного датасета внутри контейнера.
 - `classes` - список классов из `metadata.json`.
-- `imported_tasks_count` - количество задач с S3/MinIO URL изображений, импортированных в Label Studio.
+- `imported_tasks_count` - общее количество задач с S3/MinIO URL изображений, импортированных во все проекты Label Studio.
 
 ### Возможные ошибки
 

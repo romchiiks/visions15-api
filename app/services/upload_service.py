@@ -44,14 +44,17 @@ class UploadService:
                 metadata=metadata,
             )
 
-            tasks = self._build_label_studio_tasks(
+            tasks_by_class = self._build_label_studio_tasks_by_class(
                 extracted_dir=extracted_dir,
                 metadata=metadata,
             )
 
-            project = await self.project_service.create_project_from_metadata_with_tasks(
+            create_projects = (
+                self.project_service.create_projects_from_metadata_with_tasks_by_class
+            )
+            projects = await create_projects(
                 metadata=metadata,
-                tasks=tasks,
+                tasks_by_class=tasks_by_class,
             )
         except Exception:
             self._cleanup_failed_upload(archive_path, extracted_dir)
@@ -59,12 +62,13 @@ class UploadService:
 
         return {
             "status": "success",
-            "project_id": project["project_id"],
-            "project_name": project["project_name"],
+            "projects": projects,
             "saved_archive_path": str(archive_path),
             "extracted_dir": str(extracted_dir),
             "classes": list(metadata["classes"].keys()),
-            "imported_tasks_count": project["imported_tasks_count"],
+            "imported_tasks_count": sum(
+                project["imported_tasks_count"] for project in projects
+            ),
         }
 
     def _build_label_studio_tasks(
@@ -72,10 +76,27 @@ class UploadService:
         extracted_dir: Path,
         metadata: dict,
     ) -> list[dict]:
+        tasks_by_class = self._build_label_studio_tasks_by_class(
+            extracted_dir=extracted_dir,
+            metadata=metadata,
+        )
+
+        return [
+            task
+            for class_tasks in tasks_by_class.values()
+            for task in class_tasks
+        ]
+
+    def _build_label_studio_tasks_by_class(
+        self,
+        extracted_dir: Path,
+        metadata: dict,
+    ) -> dict[str, list[dict]]:
         dataset_root = self._find_dataset_root(extracted_dir)
 
-        tasks = []
+        tasks_by_class = {}
         for class_name, class_info in metadata["classes"].items():
+            tasks_by_class[class_name] = []
             images_dir = dataset_root / Path(class_info["directory"]) / "images"
             images = sorted(
                 path
@@ -95,20 +116,19 @@ class UploadService:
                     source_path=image_path,
                     object_name=object_name,
                 )
-                tasks.append(
-                    {
-                        "data": {
-                            "image": image_url,
-                        },
-                        "meta": {
-                            "class": class_name,
-                            "article": class_info["article"],
-                            "source_path": object_name,
-                        },
-                    }
-                )
+                task = {
+                    "data": {
+                        "image": image_url,
+                    },
+                    "meta": {
+                        "class": class_name,
+                        "article": class_info["article"],
+                        "source_path": object_name,
+                    },
+                }
+                tasks_by_class[class_name].append(task)
 
-        return tasks
+        return tasks_by_class
 
     def _find_dataset_root(self, extracted_dir: Path) -> Path:
         direct_metadata = extracted_dir / "metadata.json"
