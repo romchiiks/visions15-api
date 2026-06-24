@@ -54,6 +54,7 @@ LABEL_STUDIO_AUTH_SCHEME=Token
 
 UPLOAD_DIR=/label-studio/files/uploads
 EXTRACTED_DIR=/label-studio/files/extracted
+LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files
 ```
 
 ### `LABEL_STUDIO_API_KEY`
@@ -261,7 +262,8 @@ curl -X POST "$API_URL/uploads/archive" \
   "project_name": "Demo dataset",
   "saved_archive_path": "/label-studio/files/uploads/...",
   "extracted_dir": "/label-studio/files/extracted/...",
-  "classes": ["cat", "dog"]
+  "classes": ["cat", "dog"],
+  "imported_tasks_count": 3
 }
 ```
 
@@ -272,6 +274,7 @@ curl -X POST "$API_URL/uploads/archive" \
 - `saved_archive_path` - путь сохраненного архива внутри контейнера.
 - `extracted_dir` - путь распакованного датасета внутри контейнера.
 - `classes` - список классов из `metadata.json`.
+- `imported_tasks_count` - количество задач с изображениями, импортированных в Label Studio.
 
 ### Возможные ошибки
 
@@ -428,6 +431,7 @@ uvicorn app.main:app --reload
 - `API_KEYS_FILE`
 - `UPLOAD_DIR`
 - `EXTRACTED_DIR`
+- `LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT`
 
 ## Проверки разработки
 

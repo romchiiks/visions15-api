@@ -45,3 +45,30 @@ class LabelStudioClient:
             )
 
         return response.json()
+
+    async def import_tasks(
+        self,
+        project_id: int,
+        tasks: list[dict],
+    ) -> dict:
+        url = f"{self.base_url}/api/projects/{project_id}/import"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url,
+                json=tasks,
+                headers=self.headers,
+                timeout=30,
+            )
+
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail={
+                    "message": "Label Studio task import failed",
+                    "label_studio_status": response.status_code,
+                    "label_studio_response": response.text,
+                },
+            )
+
+        return response.json()

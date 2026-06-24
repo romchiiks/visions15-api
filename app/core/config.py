@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     UPLOAD_DIR: str = "/label-studio/files/uploads"
     EXTRACTED_DIR: str = "/label-studio/files/extracted"
+    LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: str = "/label-studio/files"
 
     API_KEYS_FILE: str = "storage/secrets/api_keys.json"
 

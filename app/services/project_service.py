@@ -43,3 +43,22 @@ class ProjectService:
             project_name=project_name,
             classes=classes,
         )
+
+    async def create_project_from_metadata_with_tasks(
+        self,
+        metadata: dict,
+        tasks: list[dict],
+    ):
+        project = await self.create_project_from_metadata(metadata=metadata)
+        import_result = {}
+
+        if tasks:
+            import_result = await self.label_studio_client.import_tasks(
+                project_id=project["project_id"],
+                tasks=tasks,
+            )
+
+        project["imported_tasks_count"] = import_result.get("task_count", len(tasks))
+        project["task_import"] = import_result
+
+        return project

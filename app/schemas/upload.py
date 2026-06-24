@@ -8,3 +8,4 @@ class UploadArchiveResponse(BaseModel):
     saved_archive_path: str
     extracted_dir: str
     classes: list[str]
+    imported_tasks_count: int
