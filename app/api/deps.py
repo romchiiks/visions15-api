@@ -4,6 +4,7 @@ from app.services.archive_service import ArchiveService
 from app.services.archive_validation_service import ArchiveValidationService
 from app.services.label_config_service import LabelConfigService
 from app.services.metadata_service import MetadataService
+from app.services.model_storage_service import ModelStorageService
 from app.services.object_storage_service import ObjectStorageService
 from app.services.project_service import ProjectService
 from app.services.upload_service import UploadService
@@ -42,6 +43,17 @@ def get_object_storage_service() -> ObjectStorageService:
         secure=settings.S3_SECURE,
         public_base_url=settings.S3_PUBLIC_BASE_URL,
         bucket_public_read=settings.S3_BUCKET_PUBLIC_READ,
+    )
+
+
+def get_model_storage_service() -> ModelStorageService:
+    return ModelStorageService(
+        endpoint_url=settings.S3_ENDPOINT_URL,
+        access_key=settings.S3_ACCESS_KEY,
+        secret_key=settings.S3_SECRET_KEY,
+        bucket_name=settings.MODEL_S3_BUCKET,
+        prefix=settings.MODEL_S3_PREFIX,
+        secure=settings.S3_SECURE,
     )
 
 

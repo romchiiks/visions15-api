@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     S3_SECURE: bool = False
     S3_PUBLIC_BASE_URL: str = "http://localhost:9000/visions15-datasets"
     S3_BUCKET_PUBLIC_READ: bool = True
+    MODEL_S3_BUCKET: str = "visions15-models"
+    MODEL_S3_PREFIX: str = "model"
 
     API_KEYS_FILE: str = "storage/secrets/api_keys.json"
 

@@ -12,6 +12,7 @@ FastAPI-сервис для создания проектов в Label Studio и
 - Поиск и проверка `metadata.json` внутри архива.
 - Проверка структуры директорий классов и количества изображений.
 - Загрузка изображений в S3/MinIO и импорт задач в Label Studio.
+- Выгрузка актуальной ML-модели и manifest из приватного MinIO bucket.
 - Безопасная распаковка ZIP/TAR с защитой от path traversal и ссылок в TAR.
 
 ## Стек
@@ -65,6 +66,8 @@ S3_BUCKET=visions15-datasets
 S3_SECURE=false
 S3_PUBLIC_BASE_URL=http://localhost:9000/visions15-datasets
 S3_BUCKET_PUBLIC_READ=true
+MODEL_S3_BUCKET=visions15-models
+MODEL_S3_PREFIX=model
 ```
 
 ### `LABEL_STUDIO_API_KEY`
@@ -103,6 +106,26 @@ Authorization: Token <LABEL_STUDIO_API_KEY>
 ```env
 S3_PUBLIC_BASE_URL=https://mv.digi-tek.ru/datasets
 ```
+
+### `MODEL_S3_BUCKET`
+
+Bucket для модели создается автоматически при первом обращении API или CLI. По умолчанию используется приватный bucket `visions15-models` со структурой объектов:
+
+```text
+model/
+  latest/
+    model.pt
+    manifest.json
+  releases/
+    24-06-2026/
+      model.pt
+      manifest.json
+    23-06-2026/
+      model.pt
+      manifest.json
+```
+
+Префикс `model` можно изменить через `MODEL_S3_PREFIX`.
 
 ## Запуск
 
@@ -322,6 +345,86 @@ curl -X POST "$API_URL/uploads/archive" \
 
 При ошибке загрузки сервис удаляет сохраненный архив и распакованную директорию.
 
+## `GET /model/manifest`
+
+Возвращает `latest/manifest.json` из bucket модели. Endpoint защищен `X-API-Key`.
+
+### Request
+
+```bash
+curl "$API_URL/model/manifest" \
+  -H "X-API-Key: $API_KEY"
+```
+
+### Response `200`
+
+```json
+{
+  "version": "2026.06.24-001",
+  "model_file": "model.pt",
+  "sha256": "ab12...",
+  "classes": ["bolt", "washer", "nut"],
+  "created_at": "2026-06-24T12:00:00Z",
+  "img_size": 1024,
+  "model_type": "yolo",
+  "notes": "fine-tuned on dataset batch 12"
+}
+```
+
+## `GET /model/latest`
+
+Скачивает ZIP-архив с двумя файлами из `latest/`: `model.pt` и `manifest.json`. Endpoint защищен `X-API-Key`.
+
+### Request
+
+```bash
+curl "$API_URL/model/latest" \
+  -H "X-API-Key: $API_KEY" \
+  -o model-latest.zip
+```
+
+### Возможные ошибки
+
+- `401` - отсутствует или неверный `X-API-Key`.
+- `404` - в bucket нет `latest/model.pt` или `latest/manifest.json`.
+- `502` - MinIO недоступен или manifest поврежден.
+
+## Управление моделью через CLI
+
+В контейнере доступна команда `visions15ctl`. Локально можно запускать тот же CLI как Python-модуль:
+
+```bash
+python -m app.cli.visions15ctl --new-model \
+  --source /opt/model/runs/best.pt \
+  --update-manifest \
+  --class bolt \
+  --class washer \
+  --class nut \
+  --img-size 1024 \
+  --notes "fine-tuned on dataset batch 12"
+```
+
+В Docker:
+
+```bash
+docker compose exec automation-api visions15ctl --new-model \
+  --source /opt/model/runs/best.pt \
+  --target model/latest/ \
+  --update-manifest
+```
+
+Команда загружает модель одновременно в `model/latest/model.pt` и `model/releases/<DD-MM-YYYY>/model.pt`. При `--update-manifest` генерируется `manifest.json` с `sha256`, `created_at`, `version`, `classes`, `img_size`, `model_type` и `notes`.
+
+Откат на релиз:
+
+```bash
+docker compose exec automation-api visions15ctl --roll-back \
+  --version 23-06-2026 \
+  --update-manifest
+```
+
+Откат копирует `model/releases/23-06-2026/model.pt` в `model/latest/model.pt` и обновляет `model/latest/manifest.json`. Если `--target bucket-storage/latest/`, CLI использует bucket `bucket-storage` и путь `latest/`; без `--target` используются `MODEL_S3_BUCKET` и `MODEL_S3_PREFIX`.
+
 ## Формат архива датасета
 
 `metadata.json` должен находиться:
@@ -474,6 +577,8 @@ uvicorn app.main:app --reload
 - `S3_SECRET_KEY`
 - `S3_BUCKET`
 - `S3_PUBLIC_BASE_URL`
+- `MODEL_S3_BUCKET`
+- `MODEL_S3_PREFIX`
 
 ## Проверки разработки
 

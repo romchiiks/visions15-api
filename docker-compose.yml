@@ -14,6 +14,8 @@ services:
       S3_SECURE: "${S3_SECURE:-false}"
       S3_PUBLIC_BASE_URL: "${S3_PUBLIC_BASE_URL:-http://localhost:9000/visions15-datasets}"
       S3_BUCKET_PUBLIC_READ: "${S3_BUCKET_PUBLIC_READ:-true}"
+      MODEL_S3_BUCKET: "${MODEL_S3_BUCKET:-visions15-models}"
+      MODEL_S3_PREFIX: "${MODEL_S3_PREFIX:-model}"
     volumes:
       - ./storage:/app/storage
       - ./files:/label-studio/files
