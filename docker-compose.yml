@@ -17,8 +17,8 @@ services:
       MODEL_S3_BUCKET: "${MODEL_S3_BUCKET:-visions15-models}"
       MODEL_S3_PREFIX: "${MODEL_S3_PREFIX:-model}"
     volumes:
-      - ./storage:/app/storage
-      - ./files:/label-studio/files
+      - ${VISIONS15_DATA_ROOT:?Set VISIONS15_DATA_ROOT in .env}/storage:/app/storage
+      - ${VISIONS15_DATA_ROOT:?Set VISIONS15_DATA_ROOT in .env}/files:/label-studio/files
     depends_on:
       - label-studio
       - minio
@@ -34,8 +34,8 @@ services:
       LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: "true"
       LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: "/label-studio/files"
     volumes:
-      - ./label-studio-data:/label-studio/data
-      - ./files:/label-studio/files
+      - ${VISIONS15_DATA_ROOT:?Set VISIONS15_DATA_ROOT in .env}/label-studio-data:/label-studio/data
+      - ${VISIONS15_DATA_ROOT:?Set VISIONS15_DATA_ROOT in .env}/files:/label-studio/files
 
   minio:
     image: minio/minio:latest
@@ -48,4 +48,4 @@ services:
       MINIO_ROOT_USER: "${S3_ACCESS_KEY:-minioadmin}"
       MINIO_ROOT_PASSWORD: "${S3_SECRET_KEY:-minioadmin}"
     volumes:
-      - ./minio-data:/data
+      - ${VISIONS15_DATA_ROOT:?Set VISIONS15_DATA_ROOT in .env}/minio-data:/data

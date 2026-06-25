@@ -49,6 +49,8 @@ Dockerfile              образ API-сервиса
 APP_NAME=Visions15-API
 APP_VERSION=0.1.0
 
+VISIONS15_DATA_ROOT=/mnt/visions15-data
+
 API_KEYS_FILE=/app/storage/secrets/api_keys.json
 
 LABEL_STUDIO_URL=http://label-studio:8080
@@ -141,6 +143,27 @@ docker compose up --build
 - MinIO S3 API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 
+## Данные Docker Compose
+
+Все host-директории с состоянием должны лежать вне каталога проекта, в `VISIONS15_DATA_ROOT`:
+
+```text
+${VISIONS15_DATA_ROOT}/storage            API-ключи и служебные файлы API
+${VISIONS15_DATA_ROOT}/files              загруженные и распакованные датасеты для Label Studio
+${VISIONS15_DATA_ROOT}/label-studio-data  база и состояние Label Studio
+${VISIONS15_DATA_ROOT}/minio-data         данные MinIO, включая buckets S3_BUCKET и MODEL_S3_BUCKET
+```
+
+На сервере с проектом в `/opt/visions15` перенесите старые данные на примонтированный диск так:
+
+```bash
+cd /opt/visions15
+chmod +x deploy/migrate-data-root.sh
+./deploy/migrate-data-root.sh /mnt/visions15-data
+```
+
+Замените `/mnt/visions15-data` на реальный mount point 800G-хранилища. Скрипт остановит compose-сервисы, скопирует `storage`, `files`, `label-studio-data` и `minio-data`, обновит `VISIONS15_DATA_ROOT` в `.env`, запустит сервисы обратно и оставит старые директории как `*.migrated-<timestamp>`.
+
 Проверка health endpoint:
 
 ```bash
@@ -166,7 +189,7 @@ X-API-Key: <api-key>
 Сами ключи хранятся в JSON-файле из переменной `API_KEYS_FILE`. В Docker Compose этот файл находится в volume:
 
 ```text
-./storage:/app/storage
+${VISIONS15_DATA_ROOT}/storage:/app/storage
 ```
 
 ### Создать API-ключ внутри контейнера
