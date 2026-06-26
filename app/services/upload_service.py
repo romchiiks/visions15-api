@@ -8,6 +8,7 @@ from app.services.archive_service import ArchiveService
 from app.services.archive_validation_service import ArchiveValidationService
 from app.services.metadata_service import MetadataService
 from app.services.object_storage_service import ObjectStorageService
+from app.services.perspective_warp_service import PerspectiveWarpService
 from app.services.project_service import ProjectService
 
 
@@ -19,12 +20,16 @@ class UploadService:
         archive_validation_service: ArchiveValidationService,
         object_storage_service: ObjectStorageService,
         project_service: ProjectService,
+        perspective_warp_service: PerspectiveWarpService | None = None,
     ):
         self.archive_service = archive_service
         self.metadata_service = metadata_service
         self.archive_validation_service = archive_validation_service
         self.object_storage_service = object_storage_service
         self.project_service = project_service
+        self.perspective_warp_service = (
+            perspective_warp_service or PerspectiveWarpService()
+        )
 
     async def process_archive_upload(
         self,
@@ -44,9 +49,20 @@ class UploadService:
                 metadata=metadata,
             )
 
+            image_paths_by_class = self._dataset_image_paths_by_class(
+                extracted_dir=extracted_dir,
+                metadata=metadata,
+            )
+            self.perspective_warp_service.warp_images(
+                image_path
+                for image_paths in image_paths_by_class.values()
+                for image_path in image_paths
+            )
+
             tasks_by_class = self._build_label_studio_tasks_by_class(
                 extracted_dir=extracted_dir,
                 metadata=metadata,
+                image_paths_by_class=image_paths_by_class,
             )
 
             create_projects = (
@@ -91,22 +107,20 @@ class UploadService:
         self,
         extracted_dir: Path,
         metadata: dict,
+        image_paths_by_class: dict[str, list[Path]] | None = None,
     ) -> dict[str, list[dict]]:
         dataset_root = self._find_dataset_root(extracted_dir)
+        if image_paths_by_class is None:
+            image_paths_by_class = self._dataset_image_paths_by_class(
+                extracted_dir=extracted_dir,
+                metadata=metadata,
+            )
 
         tasks_by_class = {}
         for class_name, class_info in metadata["classes"].items():
             tasks_by_class[class_name] = []
-            images_dir = dataset_root / Path(class_info["directory"]) / "images"
-            images = sorted(
-                path
-                for path in images_dir.iterdir()
-                if path.is_file()
-                and path.suffix.lower()
-                in self.archive_validation_service.ALLOWED_IMAGE_EXTENSIONS
-            )
 
-            for image_path in images:
+            for image_path in image_paths_by_class[class_name]:
                 object_name = self._storage_object_name(
                     extracted_dir=extracted_dir,
                     dataset_root=dataset_root,
@@ -129,6 +143,26 @@ class UploadService:
                 tasks_by_class[class_name].append(task)
 
         return tasks_by_class
+
+    def _dataset_image_paths_by_class(
+        self,
+        extracted_dir: Path,
+        metadata: dict,
+    ) -> dict[str, list[Path]]:
+        dataset_root = self._find_dataset_root(extracted_dir)
+
+        image_paths_by_class = {}
+        for class_name, class_info in metadata["classes"].items():
+            images_dir = dataset_root / Path(class_info["directory"]) / "images"
+            image_paths_by_class[class_name] = sorted(
+                path
+                for path in images_dir.iterdir()
+                if path.is_file()
+                and path.suffix.lower()
+                in self.archive_validation_service.ALLOWED_IMAGE_EXTENSIONS
+            )
+
+        return image_paths_by_class
 
     def _find_dataset_root(self, extracted_dir: Path) -> Path:
         direct_metadata = extracted_dir / "metadata.json"

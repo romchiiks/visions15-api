@@ -6,6 +6,7 @@ from app.services.label_config_service import LabelConfigService
 from app.services.metadata_service import MetadataService
 from app.services.model_storage_service import ModelStorageService
 from app.services.object_storage_service import ObjectStorageService
+from app.services.perspective_warp_service import PerspectiveWarpService
 from app.services.project_service import ProjectService
 from app.services.upload_service import UploadService
 
@@ -32,6 +33,10 @@ def get_archive_validation_service() -> ArchiveValidationService:
 
 def get_label_config_service() -> LabelConfigService:
     return LabelConfigService()
+
+
+def get_perspective_warp_service() -> PerspectiveWarpService:
+    return PerspectiveWarpService()
 
 
 def get_object_storage_service() -> ObjectStorageService:
@@ -71,4 +76,5 @@ def get_upload_service() -> UploadService:
         archive_validation_service=get_archive_validation_service(),
         object_storage_service=get_object_storage_service(),
         project_service=get_project_service(),
+        perspective_warp_service=get_perspective_warp_service(),
     )
